@@ -62,6 +62,49 @@ def stock_buy(request, pk):
 
     return render(request, 'stock.html', context)
 
+def stock_sell(request, pk):
+    if request.method != "POST":
+        return redirect('stock:detail', pk=pk)
+
+    stock = get_object_or_404(Stock, pk=pk)
+    form = BuySellForm(request.POST)
+
+    if form.is_valid():
+        amount = form.cleaned_data['amount']
+        price = form.cleaned_data['price']
+        sell_income = price * amount
+
+        try:
+            acc_stock = AccountStock.objects.get(account=request.user.account, stock=stock)
+        except AccountStock.DoesNotExist:
+            form.add_error(None, f'Акции с именем {stock.ticker} не существует на нашей бирже  ')
+        else:
+            if acc_stock.amount < amount:
+                form.add_error(None, f'У вас нехватает акций для продажи этого количества')
+            else:
+                acc_stock.amount = acc_stock.amount - amount
+                
+                if acc_stock.amount == 0:
+                    acc_stock.average_buy_cost = 0
+
+                acc_currency, created = AccountCurrency.objects.get_or_create(
+                    account=request.user.account, 
+                    currency=stock.currency,
+                    defaults={'amount': 0}
+                )
+
+                acc_currency.amount = acc_currency.amount + sell_income
+                acc_stock.save()
+                acc_currency.save()
+                return redirect('stock:list')
+
+    context = {
+        'stock': get_object_or_404(Stock, pk=pk),
+        'form': form
+    }
+
+    return render(request, 'stock.html', context)
+
 @login_required
 def account(request):
     currencies = cache.get(f'currencies_{request.user.username}')
