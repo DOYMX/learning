@@ -3,9 +3,18 @@
     <div style="text-align: center;">
         <div style="font-size: 24px;">Акции {{ stock.name }} ({{ stock.ticker }})</div>
         {% if stock.logo %}
-            <div><img src="{{ MEDIA_URL }}/{{ stock.logo }}" width="400" /></div>
+            <div><img src="{{ MEDIA_URL }}{{ stock.logo }}" width="400" /></div>
         {% endif %}
     </div>
+    
+    <!-- Блок ошибок -->
+    {% if form.errors %}
+        <div style="color: red; text-align: center; margin: 10px 0;">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
     
     <div style="display: flex; justify-content: center; gap: 40px; margin-top: 20px;">
         <!-- Форма покупки -->
